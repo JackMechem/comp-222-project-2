@@ -1,8 +1,13 @@
 #include <ctype.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/*
+ *   Types, Enums, and Definitions
+ */
+
+// {{{ Opcodes
 
 typedef enum {
 	ADD,
@@ -63,6 +68,10 @@ typedef enum {
 	NUM_INSTRUCTIONS
 } Opcode;
 
+// }}}
+
+// {{{ Instruction Formats
+
 typedef enum {
 	R_TYPE,
 	I_TYPE,
@@ -73,6 +82,7 @@ typedef enum {
 	UNKNOWN_TYPE
 } InstructionFormat;
 
+// Array to get instruction format from opcode
 InstructionFormat instruction_formats[NUM_INSTRUCTIONS] = {
 	[ADD] = R_TYPE,	  [ADDS] = R_TYPE,	[SUB] = R_TYPE,	   [SUBS] = R_TYPE,
 	[AND] = R_TYPE,	  [ANDS] = R_TYPE,	[ORR] = R_TYPE,	   [EOR] = R_TYPE,
@@ -89,6 +99,10 @@ InstructionFormat instruction_formats[NUM_INSTRUCTIONS] = {
 	[UXTW] = R_TYPE,  [B_EQ] = B_TYPE,	[B_NE] = B_TYPE,   [B_GT] = B_TYPE,
 	[B_LT] = B_TYPE,  [B_GE] = B_TYPE,	[B_LE] = B_TYPE,
 };
+
+// }}}
+
+// {{{ Values For Different Formats
 
 typedef struct {
 	char *rd, *rn, *rm, *shamt;
@@ -109,6 +123,10 @@ typedef struct {
 	char *rd, *imm16, *sh;
 } IMVals;
 
+// }}}
+
+// {{{ Parsed Instruction Structs
+
 typedef struct {
 	Opcode type;
 	InstructionFormat format;
@@ -126,6 +144,14 @@ typedef struct {
 	int instructions_count;
 	Instruction *instructions;
 } Inputs;
+
+// }}}
+
+/*
+ *   Parser, Helper Functions
+ */
+
+// {{{ Helper Functions
 
 static void skip_spaces(const char *s, size_t *i) {
 	while (s[*i] == ' ' || s[*i] == '\t')
@@ -155,7 +181,45 @@ static void skip_comma_and_spaces(const char *s, size_t *i) {
 	skip_spaces(s, i);
 }
 
-void setInstructionValues(Instruction *instruction, const char *line) {
+int isLoad(Instruction ins) {
+	return ins.type == LDUR || ins.type == LDURB || ins.type == LDURH ||
+		   ins.type == LDURSW;
+}
+
+int instructionReadsRegister(Instruction ins, const char *reg) {
+
+	switch (ins.format) {
+
+	case R_TYPE:
+		return (ins.values.R.rn && strcmp(ins.values.R.rn, reg) == 0) ||
+			   (ins.values.R.rm && strcmp(ins.values.R.rm, reg) == 0);
+
+	case I_TYPE:
+		return (ins.values.I.rn && strcmp(ins.values.I.rn, reg) == 0);
+
+	case D_TYPE:
+		if (ins.type == STUR || ins.type == STURH || ins.type == STURB) {
+			return (ins.values.D.rn && strcmp(ins.values.D.rn, reg) == 0) ||
+				   (ins.values.D.rt && strcmp(ins.values.D.rt, reg) == 0);
+		}
+		return 0;
+
+	case CB_TYPE:
+		return (ins.values.CB.rt && strcmp(ins.values.CB.rt, reg) == 0);
+
+	case B_TYPE:
+		return 0;
+
+	default:
+		return 0;
+	}
+}
+
+// }}}
+
+// {{{ Parse Instruction Values
+
+void parseInstructionValues(Instruction *instruction, const char *line) {
 	size_t i = 0;
 
 	skip_spaces(line, &i);
@@ -233,6 +297,10 @@ void setInstructionValues(Instruction *instruction, const char *line) {
 		}
 	}
 }
+
+// }}}
+
+// {{{ Instruction Parser
 
 Instruction parseInstructionFromUser(char *instruction_unparsed) {
 	Instruction instruction;
@@ -418,10 +486,18 @@ Instruction parseInstructionFromUser(char *instruction_unparsed) {
 		printf("Unknown instruction: %s\n", instruction_str);
 	}
 
-	setInstructionValues(&instruction, instruction_unparsed);
+	parseInstructionValues(&instruction, instruction_unparsed);
 
 	return instruction;
 }
+
+// }}}
+
+/*
+ *  Input and Output
+ */
+
+// {{{ Log Parsed Instruction
 
 void printInstruction(const Instruction *ins) {
 	printf("Opcode = %d\n", ins->type);
@@ -430,42 +506,42 @@ void printInstruction(const Instruction *ins) {
 
 	case R_TYPE:
 		printf("Format = R_TYPE\n");
-		printf("  rd    = %s\n", ins->values.R.rd);
-		printf("  rn    = %s\n", ins->values.R.rn);
-		printf("  rm    = %s\n", ins->values.R.rm);
-		printf("  shamt = %s\n", ins->values.R.shamt);
+		printf("rd = %s\n", ins->values.R.rd);
+		printf("rn = %s\n", ins->values.R.rn);
+		printf("rm = %s\n", ins->values.R.rm);
+		printf("shamt = %s\n", ins->values.R.shamt);
 		break;
 
 	case I_TYPE:
 		printf("Format = I_TYPE\n");
-		printf("  rd     = %s\n", ins->values.I.rd);
-		printf("  rn     = %s\n", ins->values.I.rn);
-		printf("  imm12  = %s\n", ins->values.I.imm12);
+		printf("rd = %s\n", ins->values.I.rd);
+		printf("rn = %s\n", ins->values.I.rn);
+		printf("imm12 = %s\n", ins->values.I.imm12);
 		break;
 
 	case D_TYPE:
 		printf("Format = D_TYPE\n");
-		printf("  rt     = %s\n", ins->values.D.rt);
-		printf("  rn     = %s\n", ins->values.D.rn);
-		printf("  addr9  = %s\n", ins->values.D.addr9);
+		printf("rt = %s\n", ins->values.D.rt);
+		printf("rn = %s\n", ins->values.D.rn);
+		printf("addr9 = %s\n", ins->values.D.addr9);
 		break;
 
 	case B_TYPE:
 		printf("Format = B_TYPE\n");
-		printf("  imm26 = %s\n", ins->values.B.imm26);
+		printf("imm26 = %s\n", ins->values.B.imm26);
 		break;
 
 	case CB_TYPE:
 		printf("Format = CB_TYPE\n");
-		printf("  rt     = %s\n", ins->values.CB.rt);
-		printf("  imm19  = %s\n", ins->values.CB.imm19);
+		printf("rt = %s\n", ins->values.CB.rt);
+		printf("imm19 = %s\n", ins->values.CB.imm19);
 		break;
 
 	case IM_TYPE:
 		printf("Format = IM_TYPE\n");
-		printf("  rd     = %s\n", ins->values.IM.rd);
-		printf("  imm16  = %s\n", ins->values.IM.imm16);
-		printf("  sh     = %s\n", ins->values.IM.sh);
+		printf("rd = %s\n", ins->values.IM.rd);
+		printf("imm16 = %s\n", ins->values.IM.imm16);
+		printf("sh = %s\n", ins->values.IM.sh);
 		break;
 
 	default:
@@ -474,65 +550,41 @@ void printInstruction(const Instruction *ins) {
 	}
 }
 
-Inputs getUserInputs() {
-	Inputs inputs;
-	printf("Number of Instructions: ");
-	scanf("%d", &inputs.instructions_count);
+// }}}
+
+// {{{ Get Inputs
+
+void getUserInputs(Inputs *inputs, unsigned int log) {
+	printf("\nNumber of Instructions: ");
+	scanf("%d", &inputs->instructions_count);
 	printf("\n");
 
-	inputs.instructions =
-		(Instruction *)malloc(inputs.instructions_count * sizeof(Instruction));
+	inputs->instructions =
+		(Instruction *)malloc(inputs->instructions_count * sizeof(Instruction));
 
-	for (int i = 1; i <= inputs.instructions_count; i++) {
+	for (int i = 1; i <= inputs->instructions_count; i++) {
 		char instruction_unparsed[64];
 
 		printf("%i) ", i);
 		scanf(" %[^\n]", instruction_unparsed);
 
-		inputs.instructions[i - 1] =
+		inputs->instructions[i - 1] =
 			parseInstructionFromUser(instruction_unparsed);
-		printInstruction(&inputs.instructions[i - 1]);
+
+		if (log == 1)
+			printInstruction(&inputs->instructions[i - 1]);
 	}
 
-	return inputs;
+	printf("\n");
 }
 
-int isLoad(Instruction ins) {
-	return ins.type == LDUR || ins.type == LDURB || ins.type == LDURH ||
-		   ins.type == LDURSW;
-}
+// }}}
 
-int instructionReadsRegister(Instruction ins, const char *reg) {
-
-	switch (ins.format) {
-
-	case R_TYPE:
-		return (ins.values.R.rn && strcmp(ins.values.R.rn, reg) == 0) ||
-			   (ins.values.R.rm && strcmp(ins.values.R.rm, reg) == 0);
-
-	case I_TYPE:
-		return (ins.values.I.rn && strcmp(ins.values.I.rn, reg) == 0);
-
-	case D_TYPE:
-		if (ins.type == STUR || ins.type == STURH || ins.type == STURB) {
-			return (ins.values.D.rn && strcmp(ins.values.D.rn, reg) == 0) ||
-				   (ins.values.D.rt && strcmp(ins.values.D.rt, reg) == 0);
-		}
-		return 0;
-
-	case CB_TYPE:
-		return (ins.values.CB.rt && strcmp(ins.values.CB.rt, reg) == 0);
-
-	case B_TYPE:
-		return 0;
-
-	default:
-		return 0;
-	}
-}
+// {{{ Print Functions
 
 void printChart(Inputs ins) {
 	int stalls = 0;
+	printf("\n");
 	for (int i = 0; i < ins.instructions_count; i++) {
 
 		for (int u = 0; u < i + stalls; u++)
@@ -549,7 +601,9 @@ void printChart(Inputs ins) {
 			}
 		}
 	}
+	printf("\n");
 }
+
 void printTotalCycleCount(Inputs ins) {
 	int stalls = 0;
 	for (int i = 0; i < ins.instructions_count; i++) {
@@ -565,13 +619,33 @@ void printTotalCycleCount(Inputs ins) {
 			}
 		}
 	}
-	printf("Total Cycle Count: %d\n", 4 + ins.instructions_count + stalls);
+	printf("\nTotal Cycle Count: %d\n\n", 4 + ins.instructions_count + stalls);
 }
+
+// }}}
+
+/*
+ *  Main
+ */
 
 int main(int argc, char **argv) {
 	Inputs inputs;
+	unsigned int log = 0;
 
-	while (0 == 0) {
+	// Read command arguments
+	if (argc > 1) {
+		for (int i = 0; i < argc; i++) {
+			if (strcmp(argv[i], "-v") == 0) {
+				log = 1;
+			} else if (strcmp(argv[i], "-h") == 0) {
+				printf("Help:\nVerbose -> <binary> -v");
+				return 0;
+			}
+		}
+	}
+
+	// Main loop
+	while (1) {
 		printf("Performance Assessment\n");
 		printf("----------------------\n");
 		printf("1) Enter instructions\n");
@@ -580,25 +654,37 @@ int main(int argc, char **argv) {
 		printf("3) Print the total cycle count for the program\n");
 		printf("4) Quit\n");
 
-		int choice;
+		unsigned int choice;
 		printf("\nEnter selection: ");
-		scanf("%d", &choice);
+		int scanf_return = scanf("%d", &choice);
 
-		switch (choice) {
-		case 1:
-			inputs = getUserInputs();
-			break;
-		case 2:
-			printChart(inputs);
-			break;
-		case 3:
-			printTotalCycleCount(inputs);
-			break;
-		case 4:
-			return 0;
-			break;
-		default:
-			break;
+		if (scanf_return == 1) {
+			switch (choice) {
+			case 1:
+				getUserInputs(&inputs, log);
+				break;
+			case 2:
+				printChart(inputs);
+				break;
+			case 3:
+				printTotalCycleCount(inputs);
+				break;
+			case 4:
+				return 0;
+				break;
+			default:
+				printf("\nError => Not a valid choice\n");
+				printf("Accepted Input: 1, 2, 3, 4\n\n");
+				break;
+			}
+		} else if (scanf_return == 0) {
+			printf("\nError => Input not an integer\n");
+			printf("Accepted Input: 1, 2, 3, 4\n\n");
+			while (getchar() != '\n') {
+			}
+		} else if (scanf_return == EOF) {
+			printf("EOF Error\n");
+			return 1;
 		}
 	}
 
