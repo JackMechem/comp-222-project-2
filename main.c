@@ -1,7 +1,64 @@
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/*
+ *   Log Functions (printf wrappers)
+ */
+
+// {{{ Printf Wrappers
+
+void errorf(const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+
+	// Bold + Red
+	printf("\033[1m\033[31m[ERROR]:\033[0m ");
+
+	// Message in red
+	printf("\033[31m");
+
+	vprintf(fmt, args);
+
+	// Reset color
+	printf("\033[0m");
+
+	va_end(args);
+}
+
+void messagef(const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+
+	// Bold + Red
+	printf("\033[1m\033[34m[MESSAGE]:\033[0m\033[34m ");
+
+	vprintf(fmt, args);
+
+	// Reset color
+	printf("\033[0m");
+
+	va_end(args);
+}
+
+void infof(const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+
+	// Bold + Red
+	printf("\033[1m[INFO]:\033[0m ");
+
+	vprintf(fmt, args);
+
+	// Reset color
+	printf("\033[0m");
+
+	va_end(args);
+}
+
+// }}}
 
 /*
  *   Types, Enums, and Definitions
@@ -483,7 +540,7 @@ Instruction parseInstructionFromUser(char *instruction_unparsed) {
 	} else {
 		instruction.type = NUM_INSTRUCTIONS;
 		instruction.format = UNKNOWN_TYPE;
-		printf("Unknown instruction: %s\n", instruction_str);
+		errorf("Unknown instruction - %s\n", instruction_str);
 	}
 
 	parseInstructionValues(&instruction, instruction_unparsed);
@@ -500,52 +557,53 @@ Instruction parseInstructionFromUser(char *instruction_unparsed) {
 // {{{ Log Parsed Instruction
 
 void printInstruction(const Instruction *ins) {
-	printf("Opcode = %d\n", ins->type);
+	if (ins->type != NUM_INSTRUCTIONS)
+		infof("\033[1mOpcode\033[0m = %d\n", ins->type);
 
 	switch (ins->format) {
 
 	case R_TYPE:
-		printf("Format = R_TYPE\n");
-		printf("rd = %s\n", ins->values.R.rd);
-		printf("rn = %s\n", ins->values.R.rn);
-		printf("rm = %s\n", ins->values.R.rm);
-		printf("shamt = %s\n", ins->values.R.shamt);
+		infof("\033[1mFormat\033[0m = R_TYPE\n");
+		infof("\033[1mrd\033[0m = %s\n", ins->values.R.rd);
+		infof("\033[1mrn\033[0m = %s\n", ins->values.R.rn);
+		infof("\033[1mrm\033[0m = %s\n", ins->values.R.rm);
+		infof("\033[1mshamt\033[0m = %s\n", ins->values.R.shamt);
 		break;
 
 	case I_TYPE:
-		printf("Format = I_TYPE\n");
-		printf("rd = %s\n", ins->values.I.rd);
-		printf("rn = %s\n", ins->values.I.rn);
-		printf("imm12 = %s\n", ins->values.I.imm12);
+		infof("\033[1mFormat\033[0m = I_TYPE\n");
+		infof("\033[1mrd\033[0m = %s\n", ins->values.I.rd);
+		infof("\033[1mrn\033[0m = %s\n", ins->values.I.rn);
+		infof("\033[1mimm12\033[0m = %s\n", ins->values.I.imm12);
 		break;
 
 	case D_TYPE:
-		printf("Format = D_TYPE\n");
-		printf("rt = %s\n", ins->values.D.rt);
-		printf("rn = %s\n", ins->values.D.rn);
-		printf("addr9 = %s\n", ins->values.D.addr9);
+		infof("\033[1mFormat\033[0m = D_TYPE\n");
+		infof("\033[1mrt\033[0m = %s\n", ins->values.D.rt);
+		infof("\033[1mrn\033[0m = %s\n", ins->values.D.rn);
+		infof("\033[1maddr9\033[0m = %s\n", ins->values.D.addr9);
 		break;
 
 	case B_TYPE:
-		printf("Format = B_TYPE\n");
-		printf("imm26 = %s\n", ins->values.B.imm26);
+		infof("\033[1mFormat\033[0m = B_TYPE\n");
+		infof("\033[1mimm26\033[0m = %s\n", ins->values.B.imm26);
 		break;
 
 	case CB_TYPE:
-		printf("Format = CB_TYPE\n");
-		printf("rt = %s\n", ins->values.CB.rt);
-		printf("imm19 = %s\n", ins->values.CB.imm19);
+		infof("\033[1mFormat\033[0m = CB_TYPE\n");
+		infof("\033[1mrt\033[0m = %s\n", ins->values.CB.rt);
+		infof("\033[1mimm19\033[0m = %s\n", ins->values.CB.imm19);
 		break;
 
 	case IM_TYPE:
-		printf("Format = IM_TYPE\n");
-		printf("rd = %s\n", ins->values.IM.rd);
-		printf("imm16 = %s\n", ins->values.IM.imm16);
-		printf("sh = %s\n", ins->values.IM.sh);
+		infof("\033[1mFormat\033[0m = IM_TYPE\n");
+		infof("\033[1mrd\033[0m = %s\n", ins->values.IM.rd);
+		infof("\033[1mimm16\033[0m = %s\n", ins->values.IM.imm16);
+		infof("\033[1msh\033[0m = %s\n", ins->values.IM.sh);
 		break;
 
 	default:
-		printf("Format = UNKNOWN\n");
+		errorf("Unknown Format\n");
 		break;
 	}
 }
@@ -555,7 +613,7 @@ void printInstruction(const Instruction *ins) {
 // {{{ Get Inputs
 
 void getUserInputs(Inputs *inputs, unsigned int log) {
-	printf("\nNumber of Instructions: ");
+	printf("\n\033[1mNumber of Instructions: \033[0m");
 	scanf("%d", &inputs->instructions_count);
 	printf("\n");
 
@@ -565,7 +623,7 @@ void getUserInputs(Inputs *inputs, unsigned int log) {
 	for (int i = 1; i <= inputs->instructions_count; i++) {
 		char instruction_unparsed[64];
 
-		printf("%i) ", i);
+		printf("\033[1m%i ->\033[0m ", i);
 		scanf(" %[^\n]", instruction_unparsed);
 
 		inputs->instructions[i - 1] =
@@ -584,7 +642,7 @@ void getUserInputs(Inputs *inputs, unsigned int log) {
 
 void printChart(Inputs ins) {
 	int stalls = 0;
-	printf("\n");
+	printf("\n\033[32m\033[1mChart of pipelined stages:\n\n");
 	for (int i = 0; i < ins.instructions_count; i++) {
 
 		for (int u = 0; u < i + stalls; u++)
@@ -601,7 +659,7 @@ void printChart(Inputs ins) {
 			}
 		}
 	}
-	printf("\n");
+	printf("\033[0m\n");
 }
 
 void printTotalCycleCount(Inputs ins) {
@@ -619,7 +677,8 @@ void printTotalCycleCount(Inputs ins) {
 			}
 		}
 	}
-	printf("\nTotal Cycle Count: %d\n\n", 4 + ins.instructions_count + stalls);
+	printf("\n\033[1m\033[32mTotal Cycle Count: %d\033[0m\n\n",
+		   4 + ins.instructions_count + stalls);
 }
 
 // }}}
@@ -636,26 +695,36 @@ int main(int argc, char **argv) {
 	if (argc > 1) {
 		for (int i = 0; i < argc; i++) {
 			if (strcmp(argv[i], "-v") == 0) {
+				printf("\033[34m\033[1mRunning in verbose mode\033[0m\n");
 				log = 1;
 			} else if (strcmp(argv[i], "-h") == 0) {
-				printf("Help:\nVerbose -> <binary> -v");
+				printf(
+					"\033[1mHelp:\033[0m\nFormat   -> <binary> [-h,-v] "
+					"\n----------------------------\nHelp     -> -h\nVerbose  "
+					"-> -v");
 				return 0;
+			} else if (i > 0) {
+				printf("\033[31m\033[1mArgument [%s] is invalid, continuing "
+					   "anyway...\033[0m\n",
+					   argv[i]);
 			}
 		}
 	}
 
 	// Main loop
 	while (1) {
-		printf("Performance Assessment\n");
+		printf("\033[1mPerformance Assessment\033[0m\n");
 		printf("----------------------\n");
-		printf("1) Enter instructions\n");
+		printf("\033[1m1 ->\033[0m Enter instructions\n");
 		printf(
-			"2) Print a chart of the pipelined stages of the instructions\n");
-		printf("3) Print the total cycle count for the program\n");
-		printf("4) Quit\n");
+			"\033[1m2 ->\033[0m Print a chart of the pipelined stages of the "
+			"instructions\n");
+		printf(
+			"\033[1m3 ->\033[0m Print the total cycle count for the program\n");
+		printf("\033[31m\033[1m4 -> Quit\033[0m\n");
 
 		unsigned int choice;
-		printf("\nEnter selection: ");
+		printf("\n\033[1mEnter selection: \033[0m");
 		int scanf_return = scanf("%d", &choice);
 
 		if (scanf_return == 1) {
@@ -673,17 +742,17 @@ int main(int argc, char **argv) {
 				return 0;
 				break;
 			default:
-				printf("\nError => Not a valid choice\n");
-				printf("Accepted Input: 1, 2, 3, 4\n\n");
+				errorf("Not a valid choice\n");
+				messagef("Accepted Input: 1, 2, 3, 4\n\n");
 				break;
 			}
 		} else if (scanf_return == 0) {
-			printf("\nError => Input not an integer\n");
-			printf("Accepted Input: 1, 2, 3, 4\n\n");
+			errorf("Input not an integer\n");
+			messagef("Accepted Input: 1, 2, 3, 4\n\n");
 			while (getchar() != '\n') {
 			}
 		} else if (scanf_return == EOF) {
-			printf("EOF Error\n");
+			errorf("EOF Error\n");
 			return 1;
 		}
 	}
