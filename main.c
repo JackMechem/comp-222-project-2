@@ -14,15 +14,12 @@ void errorf(const char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
 
-	// Bold + Red
 	printf("\033[1m\033[31m[ERROR]:\033[0m ");
 
-	// Message in red
 	printf("\033[31m");
 
 	vprintf(fmt, args);
 
-	// Reset color
 	printf("\033[0m");
 
 	va_end(args);
@@ -32,12 +29,10 @@ void messagef(const char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
 
-	// Bold + Red
 	printf("\033[1m\033[34m[MESSAGE]:\033[0m\033[34m ");
 
 	vprintf(fmt, args);
 
-	// Reset color
 	printf("\033[0m");
 
 	va_end(args);
@@ -47,12 +42,10 @@ void infof(const char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
 
-	// Bold + Red
 	printf("\033[1m[INFO]:\033[0m ");
 
 	vprintf(fmt, args);
 
-	// Reset color
 	printf("\033[0m");
 
 	va_end(args);
