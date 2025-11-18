@@ -13,7 +13,7 @@ cd build
 
 meson compile
 
-./project1
+./project2
 ```
 
 ### Using Makefile

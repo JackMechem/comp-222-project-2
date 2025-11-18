@@ -1,5 +1,5 @@
 {
-  description = "comp 222 project 2";
+  description = "COMP 222 Project 2";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -11,7 +11,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
 
-        proj1 = pkgs.stdenv.mkDerivation {
+        proj2 = pkgs.stdenv.mkDerivation {
           pname = "proj2";
           version = "0.0.1";
           src = ./.;
@@ -28,7 +28,7 @@
 
         };
       in {
-        packages.default = proj1;
+        packages.default = proj2;
 
         devShell = pkgs.mkShell {
           nativeBuildInputs = [

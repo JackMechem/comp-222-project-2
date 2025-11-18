@@ -695,7 +695,7 @@ int main(int argc, char **argv) {
 	if (argc > 1) {
 		for (int i = 0; i < argc; i++) {
 			if (strcmp(argv[i], "-v") == 0) {
-				printf("\033[34m\033[1mRunning in verbose mode\033[0m\n");
+				messagef("Running in verbose mode\n");
 				log = 1;
 			} else if (strcmp(argv[i], "-h") == 0) {
 				printf(
